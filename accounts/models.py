@@ -19,20 +19,17 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
-        user = self.create_user(
+        return self.create_user(
             email=email,
             phone=phone,
             password=password,
             **extra_fields
         )
-        user.is_admin = True
-        user.save(using=self._db)
-        return user
 
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=64, unique=True)
     email = models.EmailField(unique=True)
-    phone = models.CharField(max_length=11, unique=False)
+    phone = models.CharField(max_length=11, unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 

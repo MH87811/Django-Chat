@@ -12,7 +12,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email', 'phone', 'n_code', 'password', 'password2', 'type', 'company_name', 'country_code', 'state_code', 'city', 'address', 'zip_code')
+        fields = ('first_name', 'last_name', 'email', 'phone', 'password', 'password2')
 
         extra_kwargs = {
             "password": {
@@ -56,16 +56,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class LoginSerializer(serializers.Serializer):
-    phone = serializers.RegexField(regex=r'^9\d{9}$', error_messages={
-        "invalid": "Invalid Phone Number",
-    })
+    email = serializers.EmailField()
     password = serializers.CharField(required=True, write_only=True)
 
     def validate(self, attrs):
-        phone = attrs.get('phone')
+        email = attrs.get('email')
         password = attrs.get('password')
-        user = authenticate(phone=phone, password=password)
+        user = authenticate(email=email, password=password)
         if user is None:
             raise serializers.ValidationError('Invalid Credentials.')
+        if not user.is_active:
+            raise serializers.ValidationError('Inactive User')
         attrs['user'] = user
         return attrs
