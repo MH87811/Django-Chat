@@ -4,7 +4,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
-from users.models import RecordRefreshToken
+from accounts.models import RefreshTokenSession
 
 User = get_user_model()
 
@@ -24,7 +24,7 @@ class TokenUtils:
     def save_hash_token(cls, token):
         hash_token = make_password(token)
         token_detail = RefreshToken(token)
-        RecordRefreshToken.objects.create(
+        RefreshTokenSession.objects.create(
             user_id=token_detail['user_id'],
             jti=token_detail['jti'],
             expires_at=timezone.datetime.fromtimestamp(
@@ -45,8 +45,8 @@ class TokenUtils:
             case cls.REFRESH_TOKEN_TYPE:
                 token = RefreshToken(token)
                 try:
-                    token_record = RecordRefreshToken.objects.get(jti=token['jti'])
-                except RecordRefreshToken.DoesNotExist:
+                    token_record = RefreshTokenSession.objects.get(jti=token['jti'])
+                except RefreshTokenSession.DoesNotExist:
                     raise TokenError('Token Not Found')
                 if not check_password(str(token), token_record.hashed_token):
                     raise TokenError('Invalid Token')
@@ -58,14 +58,14 @@ class TokenUtils:
     @classmethod
     def revoke_token(cls, token):
         token = cls.validate_token(token, cls.REFRESH_TOKEN_TYPE)
-        token_record = RecordRefreshToken.objects.get(jti=token['jti'])
+        token_record = RefreshTokenSession.objects.get(jti=token['jti'])
         token_record.is_revoked = True
         token_record.revoked_at = timezone.now()
         token_record.save(update_fields=['is_revoked', 'revoked_at'])
 
     @classmethod
     def revoke_tokens(cls, user_id):
-        RecordRefreshToken.objects.filter(user_id=user_id, is_revoked=False).update(is_revoked=True, revoked_at=timezone.now())
+        RefreshTokenSession.objects.filter(user_id=user_id, is_revoked=False).update(is_revoked=True, revoked_at=timezone.now())
 
     @classmethod
     @transaction.atomic
